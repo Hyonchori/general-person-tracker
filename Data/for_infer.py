@@ -8,7 +8,7 @@ from threading import Thread
 import cv2
 import numpy as np
 
-from data_utils import clean_str, letterbox
+from .data_utils import clean_str, letterbox
 
 IMG_FORMATS = ['bmp', 'jpg', 'jpeg', 'png', 'tif', 'tiff', 'dng', 'webp', 'mpo']  # acceptable image suffixes
 VID_FORMATS = ['mov', 'avi', 'mp4', 'mpg', 'mpeg', 'm4v', 'wmv', 'mkv']  # acceptable video suffixes

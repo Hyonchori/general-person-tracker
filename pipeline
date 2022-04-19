@@ -1,0 +1,27 @@
+1. Data
+Build dataset for train model
+- train data preprocessing
+- data augmentation
+- make dataloader (images, videos, streams)
+
+
+2. Model
+Deep learning model
+- classification
+- detection (YOLOX)
+- tracking (BYTE (+ deep feature matching))
+
+
+3. Training
+Train deep learning model
+- classifier
+- detector
+- tracker
+- model MMA
+- train feedback using visualization
+
+
+4. Inference
+- fp16/fp32
+- fused convolution with BN
+- make alarm (using DIY region)
