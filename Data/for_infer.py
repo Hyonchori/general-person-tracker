@@ -8,7 +8,7 @@ from threading import Thread
 import cv2
 import numpy as np
 
-from .data_utils import clean_str, letterbox
+from .data_utils import clean_str, letterbox, preproc
 
 IMG_FORMATS = ['bmp', 'jpg', 'jpeg', 'png', 'tif', 'tiff', 'dng', 'webp', 'mpo']  # acceptable image suffixes
 VID_FORMATS = ['mov', 'avi', 'mp4', 'mpg', 'mpeg', 'm4v', 'wmv', 'mkv']  # acceptable video suffixes
@@ -81,8 +81,10 @@ class LoadImages:
         # Padded resize
         img, ratio, (dw, dh) = letterbox(img0, self.img_size, stride=self.stride, auto=self.auto)
 
+        # Preprocess
+        img = preproc(img)
+
         # Convert
-        img = img.transpose((2, 0, 1))[::-1]  # HWC to CHW, BGR to RGB
         img = np.ascontiguousarray(img)
 
         return path, img, img0, self.cap, s, [(ratio, (dw, dh))]
@@ -168,16 +170,16 @@ class LoadStreams:
             cv2.destroyAllWindows()
             raise StopIteration
 
-        # Letterbox
+        # Letterbox and preprocess
         img0 = self.imgs.copy()
         letterboxes = [letterbox(x, self.img_size, stride=self.stride, auto=self.rect and self.auto) for x in img0]
+        img = [preproc(x[0]) for x in letterboxes]
         resize_params = [x[1:] for x in letterboxes]
 
         # Stack
-        img = np.stack([x[0] for x in letterboxes], 0)
+        img = np.stack(img, 0)
 
         # Convert
-        img = img[..., ::-1].transpose((0, 3, 1, 2))  # BGR to RGB, BHWC to BCHW
         img = np.ascontiguousarray(img)
 
         return self.sources, img, img0, self.caps, '', resize_params

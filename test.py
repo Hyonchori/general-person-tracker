@@ -1,4 +1,4 @@
-'''import torch
+"""import torch
 
 from Model.backbones.darknet import CSPDarknet
 from Model.necks.yolo_pafpn import YOLOPAFPN
@@ -20,16 +20,34 @@ model = YOLOX()
 outputs = model(input_sample)
 
 model_info(model, verbose=True)
-'''
+
 import cv2
+import numpy as np
 from Data.for_infer import LoadStreams
 
 source = "0"
 dataset = LoadStreams(source)
+
+mean = np.array([0.485, 0.456, 0.406])
+std = np.array([0.299, 0.224, 0.225])
 for source, img, img0, cap, s, rp in dataset:
     print(img.shape)
     if len(img0) == 1:
         img0 = img0[0]
     print(img0.shape)
-    cv2.imshow("img", img0)
+    img = img[0].transpose(1, 2, 0)[..., ::-1]
+    #img *= std
+    #img += mean
+    print(img)
+    cv2.imshow("img", img)
     cv2.waitKey(1)
+"""
+
+import numpy as np
+
+a = np.array([
+    [1, 3, 4, 5, 6],
+    [3, 2, 1, 4, 6],
+    [2, 45, 5, 2, 1]
+])
+print(a[:, 2])
