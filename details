@@ -38,9 +38,17 @@ trackers
     - ???
 
 data
-- data_utils.py (전처리, label 형식 정의(classification: [cls], detection: [bbox, cls])
+- data_utils.py (전처리, scaling, normalize, letterbox, resize)
 - for_infer
-
+    - dataset_infer.py (LoadStreams, LoadImages)
 - for_train
-    - augmentations.py
-    - 
+    - augmentations.py (이미지-라벨을 동시에 변환해주는 것 / 이미지만 변환해주는 것 나누기?)
+    - dataset_coco.py (COCODataset 목적에 따라 bbox, keypoint, segmentation 나눠서 읽기)
+    - augmented_dataset.py (Transform 클래스를 만들고 augmentations.py에 있는 기법을 이용해 변환 정의)
+
+train
+- losses
+    - iou_loss.py
+    - cls_loss.py
+    - ??
+- train_utils.py (학습 결과 시각화, 오픈 데이터셋에 대한 실험?, precision, recall, f1_score, mAP, sample image...)
