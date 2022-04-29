@@ -36,7 +36,7 @@ class DetectionAugmentor(Dataset):
 
     def __init__(self, dataset, img_size, mosaic=True, preproc=None,
                  degrees=10.0, translate=0.1, scale=(0.5, 1.5), mscale=(0.5, 1.5),
-                 shear=2.0, perspective=0.0, enable_mixup=True, *args):
+                 shear=2.0, perspective=0.0, mixup=0.5, enable_mixup=True, *args):
         super().__init__()
         self.img_size = img_size
         self._dataset = dataset
@@ -46,6 +46,7 @@ class DetectionAugmentor(Dataset):
         self.scale = scale
         self.shear = shear
         self.perspective = perspective
+        self.mixup = mixup
         self.mixup_scale = mscale
         self.enable_mosaic = mosaic
         self.enable_mixup = enable_mixup
@@ -112,7 +113,7 @@ class DetectionAugmentor(Dataset):
                 border=[-input_h // 2, -input_w // 2],
             )
 
-            if self.enable_mosaic and not len(mosaic_labels) == 0:
+            if self.enable_mosaic and not len(mosaic_labels) == 0 and :
                 mosaic_img, mosaic_labels = self.mixup_scale(mosaic_img, mosaic_labels, self.img_size)
 
             mix_img, padded_labels = self.preproc(mosaic_img, mosaic_labels, self.img_size)
@@ -139,4 +140,27 @@ class DetectionAugmentor(Dataset):
             cp_img = np.ones((input_size[0], input_size[1], 3)) * 114.
         else:
             cp_img = np.ones(input_size) * 114.
+        cp_scale_ratio = min(input_size[0] / img.shape[0], input_size[1] / img.shape[1])
+        resized_img = cv2.resize(
+            img,
+            (int(img.shape[1] * cp_scale_ratio), int(img.shape[0] * cp_scale_ratio)),
+            interpolation=cv2.INTER_LINEAR
+        ).astype(np.float32)
+        cp_img[
+            : int(img.shape[0] * cp_scale_ratio), : int(img.shape[1] * cp_scale_ratio)
+        ] = resized_img
+        cp_img = cv2.resize(
+            cp_img,
+            (int(cp_img.shape[1] * jit_factor), int(cp_img.shape[0] * jit_factor))
+        )
+        cp_scale_ratio *= jit_factor
+        if flip:
+            cp_img = cp_img[:, ::-1, :]
+
+        origin_h, origin_w = cp_img.shape[: 2]
+        target_h, target_w = origin_img.shape[: 2]
+        padded_img = np.zeros(
+            (max(origin_h, target_h), max(origin_w, target_w), 3)
+        ).astype(np.uint8)
+        padded_img[:origin_h, :origin_w] = cp_img
 
