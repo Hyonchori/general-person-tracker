@@ -29,6 +29,12 @@ def get_mosaic_coordinate(mosaic_image, mosaic_index, xc, yc, w, h, input_h, inp
     return (x1, y1, x2, y2), small_coord
 
 
+def adjust_box_anns(bbox, scale_ratio, padw, padh, w_max, h_max):
+    bbox[:, 0::2] = np.clip(bbox[:, 0::2] * scale_ratio + padw, 0, w_max)
+    bbox[:, 1::2] = np.clip(bbox[:, 1::2] * scale_ratio + padh, 0, h_max)
+    return bbox
+
+
 class DetectionAugmentor(Dataset):
     """
     Detection dataset that performs mosaic and mixup for normal dataset.
@@ -46,7 +52,7 @@ class DetectionAugmentor(Dataset):
         self.scale = scale
         self.shear = shear
         self.perspective = perspective
-        self.mixup = mixup
+        self.mixup_ratio = mixup
         self.mixup_scale = mscale
         self.enable_mosaic = mosaic
         self.enable_mixup = enable_mixup
@@ -113,7 +119,7 @@ class DetectionAugmentor(Dataset):
                 border=[-input_h // 2, -input_w // 2],
             )
 
-            if self.enable_mosaic and not len(mosaic_labels) == 0 and :
+            if self.enable_mosaic and not len(mosaic_labels) == 0 and random.random() < self.mixup_ratio:
                 mosaic_img, mosaic_labels = self.mixup_scale(mosaic_img, mosaic_labels, self.img_size)
 
             mix_img, padded_labels = self.preproc(mosaic_img, mosaic_labels, self.img_size)
@@ -164,3 +170,39 @@ class DetectionAugmentor(Dataset):
         ).astype(np.uint8)
         padded_img[:origin_h, :origin_w] = cp_img
 
+        x_offset, y_offset = 0, 0
+        if padded_img.shape[0] > target_h:
+            y_offset = random.randint(0, padded_img.shape[0] - target_h - 1)
+        if padded_img.shape[1] > target_w:
+            x_offset = random.randint(0, padded_img.shape[1] - target_w - 1)
+        padded_cropped_img = padded_img[
+                             y_offset: y_offset + target_h, x_offset: x_offset + target_w
+                             ]
+
+        cp_bboxes_origin_np = adjust_box_anns(
+            cp_labels[:, :4].copy(), cp_scale_ratio, 0, 0, origin_w, origin_h
+        )
+        if flip:
+            cp_bboxes_origin_np[:, 0::2] = (
+                    origin_w - cp_bboxes_origin_np[:, 0::2][:, ::-1]
+            )
+        cp_bboxes_transformed_np = cp_bboxes_origin_np.copy()
+        cp_bboxes_transformed_np[:, 0::2] = cp_bboxes_transformed_np[:, 0::2] - x_offset
+        cp_bboxes_transformed_np[:, 1::2] = cp_bboxes_transformed_np[:, 1::2] - y_offset
+        keep_list = box_candidates(cp_bboxes_origin_np.T, cp_bboxes_transformed_np.T, 5)
+
+        if keep_list.sum() >= 1.0:
+            cls_labels = cp_labels[keep_list, 4:5].copy()
+            id_labels = cp_labels[keep_list, 5:6].copy()
+            box_labels = cp_bboxes_transformed_np[keep_list]
+            labels = np.hstack((box_labels, cls_labels, id_labels))
+            # remove outside bbox
+            labels = labels[labels[:, 0] < target_w]
+            labels = labels[labels[:, 2] > 0]
+            labels = labels[labels[:, 1] < target_h]
+            labels = labels[labels[:, 3] > 0]
+            origin_labels = np.vstack((origin_labels, labels))
+            origin_img = origin_img.astype(np.float32)
+            origin_img = 0.5 * origin_img + 0.5 * padded_cropped_img.astype(np.float32)
+
+        return origin_img, origin_labels

@@ -1,0 +1,46 @@
+목적: 다양한 환경에서 물체를 인식할 수 있는 물체 인식 딥러닝 모델 활용을 위한 학습, 추론 파이프라인
+
+모델 종류:
+- 분류(ResNet, EfficientNet)
+- 검출(YOLO)
+- 분할
+- 추적
+
+모델 구성 요소
+... 개발자마다 모델 구현한 방법이 다 다른데 이를 나만의 방식으로 통일하는게 맞나?
+모델 구현 자체는 그대로 두고 학습 테크닉만 통일하면 될 것 같은데...
+다만 모델의 task 별 output 형태는 통일해야 함.
+
+패키지 구상도
+models
+- model_utils.py (모델 FLOPs 계산, 사이즈, 추론 시간 등)
+- building_blocks.py
+- backbones
+    - basic_backbone.py (입력 이미지 사이즈, 출력 피쳐맵 채널 리스트, width_r, height_r)
+    - darknet.py
+    - resnet.py
+- necks
+    - basic_neck.py (입력 피쳐맵 채널 리스트, 출력 피쳐맵 채널 리스트, width_r, height_r)
+    - pafpn.py
+- heads
+    - basic_classifier.py (입력 피쳐맵 채널 리스트, num_classes, width_r, height_r)
+    - basic_detector.py (입력 피쳐맵 채널 리스트, num_classes, width_r, height_r)
+    - yolox_head.py
+    - yolov5_head.py
+- classifier
+    - efficientnet.py
+- detector
+    - yolox.py
+- segmentor
+
+
+trackers
+    - ???
+
+data
+- data_utils.py (전처리, label 형식 정의(classification: [cls], detection: [bbox, cls])
+- for_infer
+
+- for_train
+    - augmentations.py
+    - 
